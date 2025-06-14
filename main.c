@@ -6,41 +6,58 @@
 #define THREAD_NUM 1
 
 
+void* producer(void* args){
+    list_t* lst = (list_t* )args;
+    char* words[10] = {"aa","bb","cc","dd","ee","ff","gg","hh","ii","jj"};
+    int x;
+    for(int i =0;i<10;i++)
+    {
+        x = rand() % 10;
+        l_add(lst,words[x]);
+        printf("Added \"%s\"\n",words[x]);
+        sleep(1);
+
+    }
+    
+}
+
+void* consumer(void* args){
+    list_t* lst = (list_t* )args;
+    char* y;
+    for(int i =0;i<10;i++)
+    {
+        y = l_pop(lst);
+        printf("Popped \"%s\"\n",y);
+        sleep(2);
+    }
+    
+    
+
+}
+
 
 int main()
 {
 
+    srand(time(NULL));
     list_t* lst = l_init(5);
-    list_t* lst2 = l_init(5);
-    char* words[10] = {"aa","bb","cc","dd","ee","ff","gg","hh","ii","jj"};
     
     pthread_t th[THREAD_NUM];
-    for(int i=0;i<THREAD_NUM;i++){
-        
-        if(pthread_create(&th[i],NULL,&(void*)l_add(lst,words[i]),NULL) !=0){
-                perror("failed to create thread");
-            } 
-       
+
+    if(pthread_create(&th[0],NULL,&producer,lst) !=0){
+        perror("failed to create thread");
     }
+     if(pthread_create(&th[1],NULL,consumer,lst) !=0){
+        perror("failed to create thread");
+    }  
+
     for(int i=0;i<THREAD_NUM;i++){
         if(pthread_join(th[i],NULL)!= 0){
             perror("Failed to join thread");
         }
     }
-    l_add(lst,"aa");
-    l_add(lst,"bb");
-    l_add(lst,"bb");
-    l_add(lst,"cc");
-    printf("lst1: ");
-    l_print(lst);
-
-    l_add(lst2,"aa");
-    l_add(lst2,"dd");
-    printf("lst2: ");
-    l_print(lst2);
 
     l_destroy(lst);
-    l_destroy(lst2);
 
 
     return 0;

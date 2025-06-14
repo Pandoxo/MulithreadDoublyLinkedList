@@ -16,13 +16,13 @@ list_t* l_init(int c){
     sem_init(&list->semEmpty,0,c);
     sem_init(&list->semTaken,0,0);
 
-
     return list;
 
 }
 void l_clear(list_t* lst){
     if(lst == NULL || lst->head == NULL)
         return;
+    pthread_mutex_lock(&lst->mutexList);
     Node* curr = lst->head;
     Node* temp; 
     while(curr!=NULL)
@@ -33,9 +33,13 @@ void l_clear(list_t* lst){
         curr->next = NULL;
         curr->prev = NULL;
         curr = temp;
+        sem_post(&lst->semEmpty);
+        sem_wait(&lst->semTaken);
+
     }
     lst->head = NULL;
     lst->size = 0;
+    pthread_mutex_unlock(&lst->mutexList);
 }
 
 
@@ -54,8 +58,12 @@ void l_destroy(list_t* lst){
 }
 void l_remove_node(list_t* lst, Node* node)
 {
+    
     if(lst == NULL ||node == NULL)
         return;
+    // sem_wait(&lst->semTaken);
+    // pthread_mutex_lock(&lst->mutexList);
+
     if(node->prev != NULL)
         node->prev->next = node->next;
     else
@@ -67,6 +75,8 @@ void l_remove_node(list_t* lst, Node* node)
     free(node);
     node = NULL;
     lst->size -= 1;
+    // sem_post(&lst->semTaken);
+    // pthread_mutex_unlock(&lst->mutexList);
     
    
 }
@@ -201,11 +211,15 @@ int l_count(list_t* lst){
 }
 
 void l_setcapacity(list_t* lst, int c){
+    if(lst ==NULL)
+        return;
+    pthread_mutex_lock(&lst->mutexList);
     if(lst->size > c){
         lst->capacity = lst->size;
     }else{
         lst->capacity = c;
     }
+    pthread_mutex_unlock(&lst->mutexList);
 }
 
 void l_remove_duplicates(list_t* lst){
